@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Casino - Compétition 50/50</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Firebase SDK (Modular) -->
+    <script type="module" src="js/firebase-service.js"></script>
+    <script type="module" src="js/games.js"></script>
+    <script type="module" src="js/blackjack.js"></script>
+    <script type="module" src="js/slots.js"></script>
+    <script type="module" src="js/multiplayer.js"></script>
+    <script type="module" src="js/app.js"></script>
+</head>
+<body>
+    <div id="app">
+        <header>
+            <div class="logo">Neon<span>Casino</span></div>
+            <nav>
+                <button class="nav-btn active" data-target="home">Accueil</button>
+                <button class="nav-btn" data-target="games">Jeux 50/50</button>
+                <button class="nav-btn" data-target="leaderboard">Classement</button>
+            </nav>
+            <div class="user-info" id="user-info" style="display: none;">
+                <span class="balance" id="user-balance">0 💰</span>
+                <button id="reset-balance-btn" class="btn-small btn-outline hidden" title="A sec ?">🔄 Renflouer</button>
+                <button id="logout-btn" class="btn-small btn-outline">Quitter</button>
+            </div>
+        </header>
+
+        <main id="main-content">
+            <!-- Home View -->
+            <section id="home" class="view active">
+                <div class="hero">
+                    <h1>Entrez dans l'arène de la chance</h1>
+                    <p>Des jeux équitables à 50/50. Grimpez au classement.</p>
+                    <div id="auth-section">
+                        <input type="text" id="username-input" placeholder="Votre Pseudo" autocomplete="off">
+                        <button id="login-btn" class="btn-primary">Rejoindre la Compétition</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Games View -->
+            <section id="games" class="view">
+                <h2>Choisissez votre jeu</h2>
+                <div class="games-grid">
+                    <div class="game-card" id="card-coinflip">
+                        <div class="game-icon">🪙</div>
+                        <h3>Pile ou Face</h3>
+                        <p>50% de chance. 100% d'adrénaline.</p>
+                        <button class="btn-secondary play-btn" data-game="coinflip">Jouer</button>
+                    </div>
+                    <div class="game-card" id="card-color">
+                        <div class="game-icon">🔴⚫</div>
+                        <h3>Rouge ou Noir</h3>
+                        <p>Choisissez votre couleur.</p>
+                        <button class="btn-secondary play-btn" data-game="color">Jouer</button>
+                    </div>
+                    <div class="game-card" id="card-blackjack">
+                        <div class="game-icon">🃏</div>
+                        <h3>Blackjack</h3>
+                        <p>Battez le croupier sans dépasser 21.</p>
+                        <button class="btn-secondary play-btn" data-game="blackjack">Jouer</button>
+                    </div>
+                    <div class="game-card" id="card-slot-100">
+                        <div class="game-icon">🎰</div>
+                        <h3>Mini Slots</h3>
+                        <p>Mise fixe de 100 💰.</p>
+                        <button class="btn-secondary play-btn play-slot-btn" data-bet="100" data-game="slots">Jouer</button>
+                    </div>
+                    <div class="game-card" id="card-slot-500">
+                        <div class="game-icon">🎰</div>
+                        <h3>Pro Slots</h3>
+                        <p>Mise fixe de 500 💰.</p>
+                        <button class="btn-secondary play-btn play-slot-btn" data-bet="500" data-game="slots">Jouer</button>
+                    </div>
+                    <div class="game-card" id="card-slot-1000">
+                        <div class="game-icon">🎰</div>
+                        <h3>VIP Slots</h3>
+                        <p>Mise fixe de 1000 💰.</p>
+                        <button class="btn-secondary play-btn play-slot-btn" data-bet="1000" data-game="slots">Jouer</button>
+                    </div>
+                    <div class="game-card" id="card-multiplayer">
+                        <div class="game-icon">🃏⚔️</div>
+                        <h3>Poker Duel</h3>
+                        <p>Affrontez un joueur (Texas Hold'em Express).</p>
+                        <button class="btn-secondary play-mp-btn">Ouvrir le Salon</button>
+                    </div>
+                </div>
+
+                <!-- Game Interface Overlay -->
+                <div id="game-interfaces">
+                    <!-- Coin Flip Interface -->
+                    <div id="interface-coinflip" class="game-interface hidden">
+                        <h3>Pile ou Face</h3>
+                        <div class="bet-controls">
+                            <input type="number" id="bet-coinflip" min="10" value="10" placeholder="Mise">
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn-action bet-btn" data-choice="heads">Pile</button>
+                            <button class="btn-action bet-btn" data-choice="tails">Face</button>
+                        </div>
+                        <div class="animation-container" id="anim-coinflip">
+                            <div class="coin" id="coin-element"></div>
+                        </div>
+                        <div class="result-message" id="result-coinflip"></div>
+                        <button class="btn-text back-btn">Retour aux jeux</button>
+                    </div>
+
+                    <!-- Color Match Interface -->
+                    <div id="interface-color" class="game-interface hidden">
+                        <h3>Rouge ou Noir</h3>
+                        <div class="bet-controls">
+                            <input type="number" id="bet-color" min="10" value="10" placeholder="Mise">
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn-action bet-btn red-btn" data-choice="red">Rouge</button>
+                            <button class="btn-action bet-btn black-btn" data-choice="black">Noir</button>
+                        </div>
+                        <div class="animation-container" id="anim-color">
+                            <div class="roulette-wrapper">
+                                <div class="roulette-pointer"></div>
+                                <div class="roulette-wheel" id="roulette-element"></div>
+                            </div>
+                        </div>
+                        <div class="result-message" id="result-color"></div>
+                        <button class="btn-text back-btn">Retour aux jeux</button>
+                    </div>
+
+                    <!-- Blackjack Interface -->
+                    <div id="interface-blackjack" class="game-interface hidden">
+                        <h3>🃏 Blackjack</h3>
+                        <div class="bet-controls" id="controls-blackjack">
+                            <input type="number" id="bet-blackjack" min="10" value="10" placeholder="Mise">
+                            <button id="start-btn-blackjack" class="btn-primary">Miser & Distribuer</button>
+                        </div>
+                        <div id="table-blackjack" class="hidden">
+                            <div class="hand-section">
+                                <h4>Croupier: <span id="dealer-score">?</span></h4>
+                                <div class="cards-container" id="dealer-cards"></div>
+                            </div>
+                            <div class="hand-section">
+                                <h4>Vous: <span id="player-score">0</span></h4>
+                                <div class="cards-container" id="player-cards"></div>
+                            </div>
+                            <div class="action-buttons" id="action-btns-blackjack">
+                                <button id="btn-hit" class="btn-action">Tirer</button>
+                                <button id="btn-stand" class="btn-action">Rester</button>
+                            </div>
+                        </div>
+                        <div class="result-message" id="result-blackjack"></div>
+                        <button id="replay-btn-blackjack" class="btn-primary hidden" style="margin-top: 15px;">Miser et Rejouer</button>
+                        <br>
+                        <button class="btn-text back-btn">Retour aux jeux</button>
+                    </div>
+
+                    <!-- Slots Interface -->
+                    <div id="interface-slots" class="game-interface hidden">
+                        <h3>🎰 Machines à Sous</h3>
+                        <p>Mise actuelle : <span id="slot-current-bet" style="color: #ffd700; font-weight: bold; font-size: 1.2rem;">100 💰</span></p>
+                        
+                        <div id="table-slots">
+                            <div class="slots-container">
+                                <div class="reel" id="reel-1">🍒</div>
+                                <div class="reel" id="reel-2">🍒</div>
+                                <div class="reel" id="reel-3">🍒</div>
+                            </div>
+                            <div class="action-buttons" style="margin-top: 20px;">
+                                <button id="btn-spin-slot" class="btn-primary">Tirer le levier !</button>
+                            </div>
+                        </div>
+                        <div class="result-message" id="result-slot"></div>
+                        <button class="btn-text back-btn">Retour aux jeux</button>
+                    </div>
+
+                    <!-- Multiplayer Interface -->
+                    <div id="interface-multiplayer" class="game-interface hidden" style="max-width: 800px;">
+                        <h3>🃏 Salon Multijoueur : Poker Duel</h3>
+                        
+                        <!-- Lobby View -->
+                        <div id="mp-view-lobby">
+                            <div class="bet-controls" style="display:flex; justify-content:center; gap:10px; margin-bottom:30px;">
+                                <input type="number" id="create-room-bet" min="10" value="100" placeholder="Mise (ex: 100)" style="width: 150px;">
+                                <button id="btn-create-room" class="btn-primary">Créer un duel</button>
+                            </div>
+                            
+                            <h4 style="margin-bottom: 15px; color: var(--secondary);">Salons en attente :</h4>
+                            <div class="lobby-container">
+                                <ul id="lobby-rooms-list" style="list-style: none;">
+                                    <li>Chargement...</li>
+                                </ul>
+                            </div>
+                            <button class="btn-text back-btn" style="margin-top: 20px;">Retour aux jeux</button>
+                        </div>
+                        
+                        <!-- Room View -->
+                        <div id="mp-view-room" class="hidden">
+                            <h4 id="room-status-msg" class="room-status">Préparation...</h4>
+                            <p style="margin-bottom: 20px; font-weight: bold; color: #ffd700;">Enjeu : <span id="room-bet-span">0</span> 💰</p>
+                            
+                            <div class="duel-arena" style="flex-direction: column;">
+                                <!-- Community Cards -->
+                                <div style="margin-bottom: 20px;">
+                                    <h4 style="color:var(--text-muted); margin-bottom:5px;">Cartes Communes (Board)</h4>
+                                    <div class="cards-container" id="community-cards" style="min-height: 100px;"></div>
+                                </div>
+                                
+                                <div style="display:flex; justify-content:space-around; width: 100%; margin-top:10px;">
+                                    <div class="player-box" id="room-p1-box" style="width: auto; min-width: 150px; padding: 15px;">
+                                        <div class="player-name" id="p1-name">Joueur 1</div>
+                                        <div class="cards-container" id="p1-cards" style="min-height: 100px;"></div>
+                                        <div class="poker-hand-desc" id="p1-hand-name" style="margin-top: 10px; font-weight: bold; color: var(--secondary);">-</div>
+                                    </div>
+                                    <div class="vs-badge" style="align-self: center;">VS</div>
+                                    <div class="player-box" id="room-p2-box" style="width: auto; min-width: 150px; padding: 15px;">
+                                        <div class="player-name" id="p2-name">En attente...</div>
+                                        <div class="cards-container" id="p2-cards" style="min-height: 100px;"></div>
+                                        <div class="poker-hand-desc" id="p2-hand-name" style="margin-top: 10px; font-weight: bold; color: var(--secondary);">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button id="btn-leave-room" class="btn-outline" style="margin-top:30px;">Annuler / Quitter</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Leaderboard View -->
+            <section id="leaderboard" class="view">
+                <h2>Leaderboard Mondial</h2>
+                <div class="leaderboard-tabs">
+                    <button class="tab-btn active" data-sort="balance">Solde Actuel</button>
+                    <button class="tab-btn" data-sort="maxBalance">Max Atteint</button>
+                    <button class="tab-btn" data-sort="totalInvested">Total Investi</button>
+                </div>
+                <div class="leaderboard-container">
+                    <ul id="leaderboard-list">
+                        <!-- Items injected by JS -->
+                        <div class="loadingSpinner"></div>
+                    </ul>
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+</html>
