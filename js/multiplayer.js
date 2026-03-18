@@ -391,6 +391,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 roomStatusMsg.style.color = "#00ff88";
                 
                 const neededToCall = roomState.currentBet - roomState[`${myRole}Bet`];
+                let maxP1Total = (roomState.p1Bet || 0) + (roomState.p1Balance || 0);
+                let maxP2Total = (roomState.p2Bet || 0) + (roomState.p2Balance || 0);
+                let absoluteMaxBet = Math.min(maxP1Total, maxP2Total);
+                
+                let maxRaiseAmount = absoluteMaxBet - roomState.currentBet;
+
+                if (maxRaiseAmount <= 0) {
+                    btnRaise.style.opacity = '0.5';
+                    btnRaise.style.pointerEvents = 'none';
+                    inputRaise.disabled = true;
+                } else {
+                    btnRaise.style.opacity = '1';
+                    btnRaise.style.pointerEvents = 'auto';
+                    inputRaise.disabled = false;
+                    inputRaise.max = maxRaiseAmount;
+                    if (parseInt(inputRaise.value) > maxRaiseAmount) inputRaise.value = maxRaiseAmount;
+                }
+
                 if (neededToCall > 0) {
                     btnCheck.classList.add('hidden');
                     btnCall.classList.remove('hidden');
@@ -490,17 +508,31 @@ document.addEventListener('DOMContentLoaded', () => {
             await updateBalance(-needed, true); window.updateBalanceUI(user.balance);
             myCurrentBet += needed;
             newPot += needed;
+            updates[`${myRole}Balance`] = user.balance;
         }
 
         if (actionInfo.type === 'raise') {
             const neededToCall = newCurrentBet - myCurrentBet;
-            const totalToPay = neededToCall + actionInfo.amount;
+            
+            const maxP1Total = (roomState.p1Bet || 0) + (roomState.p1Balance || 0);
+            const maxP2Total = (roomState.p2Bet || 0) + (roomState.p2Balance || 0);
+            const absoluteMaxBet = Math.min(maxP1Total, maxP2Total);
+            const maxRaiseAllowed = absoluteMaxBet - newCurrentBet;
+            
+            let requestedRaise = actionInfo.amount;
+            if (requestedRaise > maxRaiseAllowed) requestedRaise = maxRaiseAllowed;
+            
+            if (requestedRaise <= 0) return;
+
+            const totalToPay = neededToCall + requestedRaise;
             if (user.balance < totalToPay) { alert("Fonds insuffisants !"); return; }
             await updateBalance(-totalToPay, true); window.updateBalanceUI(user.balance);
+            
             myCurrentBet += totalToPay;
             newPot += totalToPay;
             newCurrentBet = myCurrentBet;
-            updates[`${oppRole}Acted`] = false; // Opponent must act again to call
+            updates[`${oppRole}Acted`] = false; 
+            updates[`${myRole}Balance`] = user.balance;
         }
 
         updates[myBetProp] = myCurrentBet;
