@@ -25,6 +25,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const selfBet = document.getElementById('self-current-bet');
     const selfHandName = document.getElementById('self-hand-name');
     const selfBox = document.getElementById('room-self-box');
+
+    const communityCardsDiv = document.getElementById('community-cards');
     
     const pokerActionsDiv = document.getElementById('poker-actions');
     const btnFold = document.getElementById('btn-poker-fold');
@@ -269,19 +271,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const snap = await getDoc(roomRef);
             if (!snap.exists() || snap.data().state !== 'waiting') throw new Error("Salon indisponible.");
             
+            // Joiner triggers the dealer!
             const deck = createDeck();
-            const p1Hole = [deck.pop(), deck.pop(), deck.pop(), deck.pop(), deck.pop()];
-            const p2Hole = [deck.pop(), deck.pop(), deck.pop(), deck.pop(), deck.pop()];
+            const p1Hole = [deck.pop(), deck.pop()];
+            const p2Hole = [deck.pop(), deck.pop()];
 
             await updateDoc(roomRef, {
                 state: 'playing',
-                stage: 'betting',
+                stage: 'pre-flop',
                 joiner: { id: user.id, username: user.username },
                 pot: snap.data().pot + roomBet,
                 deck: deck,
                 p1Hole: p1Hole,
                 p2Hole: p2Hole,
-                turn: 'p1' 
+                turn: 'p1' // P1 acts first pre-flop for simplicity
             });
             enterRoomView(roomId, 'p2', snap.data().creator, user);
         } catch (e) {
@@ -330,10 +333,10 @@ document.addEventListener('DOMContentLoaded', () => {
         oppBet.textContent = '0';
         selfCards.innerHTML = '';
         oppCards.innerHTML = '';
-        for(let i=0; i<5; i++) { 
-            selfCards.appendChild(renderCard(null, true)); 
-            oppCards.appendChild(renderCard(null, true)); 
-        }
+        communityCardsDiv.innerHTML = '';
+        for(let i=0; i<5; i++) communityCardsDiv.appendChild(renderCard(null, true));
+        selfCards.appendChild(renderCard(null, true)); selfCards.appendChild(renderCard(null, true));
+        oppCards.appendChild(renderCard(null, true)); oppCards.appendChild(renderCard(null, true));
         selfHandName.textContent = '-';
         oppHandName.textContent = '-';
         pokerActionsDiv.classList.add('hidden');
@@ -353,6 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (roomState.state === 'playing') {
+            // Update names if joined
             if (myRole === 'p1') oppName.textContent = roomState.joiner.username;
             else oppName.textContent = roomState.creator.username;
 
@@ -360,15 +364,24 @@ document.addEventListener('DOMContentLoaded', () => {
             selfBet.textContent = roomState[`${myRole}Bet`];
             oppBet.textContent = roomState[`${oppRole}Bet`];
 
+            // Render Board
+            communityCardsDiv.innerHTML = '';
+            for(let i=0; i<5; i++) {
+                if (roomState.board[i]) communityCardsDiv.appendChild(renderCard(roomState.board[i]));
+                else communityCardsDiv.appendChild(renderCard(null, true));
+            }
+
             // Render Hole Cards
             selfCards.innerHTML = '';
             const myHole = roomState[`${myRole}Hole`];
             myHole.forEach(c => selfCards.appendChild(renderCard(c)));
             
-            oppCards.innerHTML = ''; 
-            for(let i=0; i<5; i++) oppCards.appendChild(renderCard(null, true));
+            oppCards.innerHTML = ''; // Opponent cards remain hidden during play
+            oppCards.appendChild(renderCard(null, true));
+            oppCards.appendChild(renderCard(null, true));
 
-            const myBest = evaluatePokerHand(myHole);
+            // Eval partial hand
+            const myBest = evaluatePokerHand([...myHole, ...roomState.board]);
             selfHandName.textContent = myBest.handName;
 
             // Turn Handling
@@ -393,6 +406,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } 
         else if (roomState.state === 'finished') {
+            if (roomStatusMsg.dataset.ended === 'true') return;
             roomStatusMsg.dataset.ended = 'true';
             pokerActionsDiv.classList.add('hidden');
             potSpan.textContent = roomState.pot;
@@ -402,7 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const oHole = roomState[`${oppRole}Hole`];
             if (oHole && roomState.winMode !== 'fold') {
                 oHole.forEach(c => oppCards.appendChild(renderCard(c)));
-                const oppBest = evaluatePokerHand(oHole);
+                const oppBest = evaluatePokerHand([...oHole, ...roomState.board]);
                 oppHandName.textContent = oppBest.handName;
             }
 
@@ -416,13 +430,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 else roomStatusMsg.textContent = `Vous Gagnez ! +${roomState.pot} 💰`;
                 roomStatusMsg.className = "room-status win";
                 
-                // We trust the winner to update their own balance safely
-                updateBalance(roomState.pot, false).then(b => window.updateBalanceUI(b));
+                // Payout exactly once!
+                if (!roomState.payoutDoneByWinner) {
+                    updateBalance(roomState.pot, false).then(b => window.updateBalanceUI(b));
+                    // We don't bother setting payoutDoneByWinner in Firestore to avoid extra writes,
+                    // we just rely on dataset.ended locally! That prevents double payouts locally.
+                }
             } else if (isTie) {
                 selfBox.classList.add('winner');
                 oppBox.classList.add('winner');
                 roomStatusMsg.textContent = `Égalité ! Pot partagé (+${roomState.pot/2} 💰)`;
-                updateBalance(roomState.pot/2, false).then(b => window.updateBalanceUI(b));
+                updateBalance(Math.floor(roomState.pot/2), false).then(b => window.updateBalanceUI(b));
             } else {
                 selfBox.classList.add('loser');
                 oppBox.classList.add('winner');
@@ -497,21 +515,52 @@ document.addEventListener('DOMContentLoaded', () => {
         if (actionInfo.type === 'raise') oppHasActed = false; // just forced them to un-act
 
         if (oppHasActed && updates[myBetProp] === updates.currentBet) {
-            // Evaluate Hand Showdown Directly
-            const p1h = evaluatePokerHand(roomState.p1Hole);
-            const p2h = evaluatePokerHand(roomState.p2Hole);
-            let winner = 'tie';
-            if (p1h.score > p2h.score) winner = 'p1';
-            else if (p2h.score > p1h.score) winner = 'p2';
+            // ADVANCE ROUND
+            let nextStage = '';
+            let deck = [...roomState.deck];
+            let board = [...roomState.board];
 
-            await updateDoc(roomRef, {
-                ...updates,
-                state: 'finished',
-                winMode: 'showdown',
-                winner: winner,
-                turn: ''
-            });
-            return;
+            if (roomState.stage === 'pre-flop') {
+                nextStage = 'flop';
+                board.push(deck.pop(), deck.pop(), deck.pop());
+            } else if (roomState.stage === 'flop') {
+                nextStage = 'turn';
+                board.push(deck.pop());
+            } else if (roomState.stage === 'turn') {
+                nextStage = 'river';
+                board.push(deck.pop());
+            } else if (roomState.stage === 'river') {
+                nextStage = 'showdown';
+            }
+
+            if (nextStage === 'showdown') {
+                // Evaluate Hand Showdown
+                const p1h = evaluatePokerHand([...roomState.p1Hole, ...board]);
+                const p2h = evaluatePokerHand([...roomState.p2Hole, ...board]);
+                let winner = 'tie';
+                if (p1h.score > p2h.score) winner = 'p1';
+                else if (p2h.score > p1h.score) winner = 'p2';
+
+                await updateDoc(roomRef, {
+                    ...updates,
+                    state: 'finished',
+                    winMode: 'showdown',
+                    winner: winner,
+                    turn: ''
+                });
+                return;
+            } else {
+                // Standard advance
+                updates.stage = nextStage;
+                updates.board = board;
+                updates.deck = deck;
+                updates.currentBet = 0;
+                updates.p1Bet = 0;
+                updates.p2Bet = 0;
+                updates.p1Acted = false;
+                updates.p2Acted = false;
+                updates.turn = 'p1'; // P1 acts first post-flop
+            }
         }
 
         await updateDoc(roomRef, updates);

@@ -85,7 +85,7 @@
                     <div class="game-card" id="card-multiplayer">
                         <div class="game-icon">🃏⚔️</div>
                         <h3>Poker Duel</h3>
-                        <p>Affrontez un joueur (Poker 5 Cartes).</p>
+                        <p>Affrontez un joueur (Texas Hold'em).</p>
                         <button class="btn-secondary play-mp-btn">Ouvrir le Salon</button>
                     </div>
                 </div>
@@ -177,7 +177,7 @@
 
                     <!-- Multiplayer Interface -->
                     <div id="interface-multiplayer" class="game-interface hidden" style="max-width: 800px;">
-                        <h3>🃏 Salon Multijoueur : Poker Classique (5 Cartes)</h3>
+                        <h3>🃏 Salon Multijoueur : Texas Hold'em</h3>
                         
                         <!-- Lobby View -->
                         <div id="mp-view-lobby">
@@ -204,24 +204,26 @@
                                     <p style="font-size: 1.5rem; font-weight: bold; color: #ffd700; margin-top: 5px;">POT: <span id="mp-pot">0</span> 💰</p>
                                 </div>
                                 
-                                <div style="display:flex; justify-content:space-around; width: 100%; margin-top:10px; align-items: center; flex-wrap: wrap; gap: 20px;">
-                                    <!-- Opponent -->
-                                    <div class="player-box" id="room-opp-box" style="width: auto; position: relative;">
-                                        <div class="player-name" id="opp-name">Adversaire</div>
-                                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom:5px;">A misé: <span id="opp-current-bet" style="color:#ffd700;">0</span></p>
-                                        <div class="cards-container" id="opp-cards" style="min-height: 100px;"></div>
-                                        <div class="poker-hand-desc" id="opp-hand-name" style="margin-top: 5px; font-weight: bold; color: var(--secondary);">-</div>
-                                    </div>
+                                <!-- Opponent -->
+                                <div class="player-box" id="room-opp-box" style="width: 100%; max-width: 400px; padding: 10px; margin-bottom: 15px;">
+                                    <div class="player-name" id="opp-name">En attente...</div>
+                                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom:5px;">A misé: <span id="opp-current-bet" style="color:#ffd700;">0</span></p>
+                                    <div class="cards-container" id="opp-cards" style="min-height: 100px;"></div>
+                                    <div class="poker-hand-desc" id="opp-hand-name" style="margin-top: 5px; font-weight: bold; color: var(--secondary);">-</div>
+                                </div>
+                                
+                                <!-- Board -->
+                                <div style="margin-bottom: 15px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; border: 1px solid var(--border); width: 100%; max-width: 500px;">
+                                    <h4 style="color:var(--text-muted); margin-bottom:10px; text-transform:uppercase; letter-spacing:1px; font-size:0.8rem; text-align:center;">Board</h4>
+                                    <div class="cards-container" id="community-cards" style="min-height: 100px;"></div>
+                                </div>
 
-                                    <div class="vs-badge" style="align-self: center;">VS</div>
-
-                                    <!-- Self -->
-                                    <div class="player-box" id="room-self-box" style="width: auto; border-color: var(--primary); position: relative;">
-                                        <div class="player-name" id="self-name">Vous</div>
-                                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom:5px;">A misé: <span id="self-current-bet" style="color:#ffd700;">0</span></p>
-                                        <div class="cards-container" id="self-cards" style="min-height: 100px;"></div>
-                                        <div class="poker-hand-desc" id="self-hand-name" style="margin-top: 5px; font-weight: bold; color: var(--secondary);">-</div>
-                                    </div>
+                                <!-- Self -->
+                                <div class="player-box" id="room-self-box" style="width: 100%; max-width: 400px; padding: 10px; margin-bottom: 15px; border-color: var(--primary);">
+                                    <div class="player-name" id="self-name">Vous</div>
+                                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom:5px;">A misé: <span id="self-current-bet" style="color:#ffd700;">0</span></p>
+                                    <div class="cards-container" id="self-cards" style="min-height: 100px;"></div>
+                                    <div class="poker-hand-desc" id="self-hand-name" style="margin-top: 5px; font-weight: bold; color: var(--secondary);">-</div>
                                 </div>
                                 
                                 <!-- Action Buttons -->

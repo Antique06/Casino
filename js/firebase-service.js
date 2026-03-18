@@ -92,10 +92,14 @@ export async function updateBalance(amount, isBet = false) {
             totalInvested: currentUser.totalInvested
         });
     } else {
-        localUsers[currentUser.id].balance = currentUser.balance;
-        localUsers[currentUser.id].maxBalance = currentUser.maxBalance;
-        localUsers[currentUser.id].totalInvested = currentUser.totalInvested;
-        saveLocal();
+        let freshLocal = JSON.parse(localStorage.getItem('casinoUsers')) || localUsers;
+        if (!freshLocal[currentUser.id]) freshLocal[currentUser.id] = {};
+        
+        freshLocal[currentUser.id].balance = currentUser.balance;
+        freshLocal[currentUser.id].maxBalance = currentUser.maxBalance;
+        freshLocal[currentUser.id].totalInvested = currentUser.totalInvested;
+        localStorage.setItem('casinoUsers', JSON.stringify(freshLocal));
+        localUsers = freshLocal;
     }
     return currentUser.balance;
 }
